@@ -1,19 +1,26 @@
 import bs4 as bs
 import requests, re
 import pandas as pd
-import time
-import datetime
+import time, datetime
 from random import randint
 from IPython.core.display import clear_output
 from warnings import warn
+import argparse, sys
 
-def get_single_movie(movie_id):
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--id', type=str, default='tt0068646',
+                        help='Enter Movie ID?')
+    args = parser.parse_args()
+    sys.stdout.write(str(get_single_movie(args)))
+
+def get_single_movie(args):
     
     start_time  = datetime.datetime.now()
 
-    print('Function Started at : {} '.format(start_time))
+    #return 'Function Started at : {} '.format(start_time)
 
-    url = 'https://www.imdb.com/title/{}/'.format(movie_id)
+    url = 'https://www.imdb.com/title/{}/'.format(args.id)
     response = requests.get(url)
 
     if response.status_code != 200:
@@ -62,7 +69,7 @@ def get_single_movie(movie_id):
 
         end_time  = datetime.datetime.now()
 
-        print('''Movie name : {} \n
+        return '''Movie name : {} \n
                 Rating : {} \n
                 Votes : {} \n
                 Metascore : {} \n
@@ -74,14 +81,13 @@ def get_single_movie(movie_id):
                 Budget : {} \n
                 OpeningWeekendUSA : {} \n
                 GrossUSA : {} \n
-                CumulativeWorldwideGross : {} \n'''
-            .format(title,rating,votes,metascore,certificate,genere,country,language,release_date,budget,OpeningWeekendUSA,GrossUSA,CumulativeWorldwideGross))
+                CumulativeWorldwideGross : {} \n'''.format(title,rating,votes,metascore,certificate,genere,country,language,release_date,budget,OpeningWeekendUSA,GrossUSA,CumulativeWorldwideGross)
 
-        print('Function Finished at : {} '.format(end_time))
+        #return 'Function Finished at : {} '.format(end_time)
 
-        print('Time Difference {} '.format(end_time - start_time))
+        #return 'Time Difference {} '.format(end_time - start_time)
 
-        
-get_single_movie('tt6911608')                  
+if __name__ == '__main__':
+    main()                 
  
         
