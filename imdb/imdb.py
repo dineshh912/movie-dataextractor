@@ -6,6 +6,7 @@ from random import randint
 from IPython.core.display import clear_output
 from warnings import warn
 import argparse, sys
+import json
 
 def main():
     parser = argparse.ArgumentParser()
@@ -87,7 +88,112 @@ def get_single_movie(args):
 
         #return 'Time Difference {} '.format(end_time - start_time)
 
-if __name__ == '__main__':
-    main()                 
- 
-        
+#if __name__ == '__main__':
+#    main()                 
+
+'''
+Default sorting in IMDB is based on Popularity.
+Sorting Options :
+
+Alphabetcal -- alpha,asc
+IMDB_Rating -- user_rating
+Number of Votes -- num_votes
+US Box Office  -- boxoffice_gross_us
+RunTime  -- runtime
+year -- year
+Release_date -- release_date
+
+'''
+def get_movie_with_year():
+    
+    titles = []
+    years = []
+    ratings = []
+    metascores = []
+    votes = []
+    certificates = []
+
+    with open('config.json', 'r+') as config:
+        data = json.load(config)
+        page_start = data['MovieData']['PageStart']
+        page_end = data['MovieData']['PageEnd']
+        year_start = data['MovieData']['YearStart']
+        year_end = data['MovieData']['YearEnd']
+
+    # Monitor Loop
+    start_time  = datetime.datetime.now()
+    request = 0
+
+    pages = [str(i) for i in range(page_start,page_end)]
+    years_url = [str(i) for i in range(year_start,year_end)]
+
+    headers = {"Accept-Language": "en-US, en;q=0.5"}
+
+    for year in years_url:
+
+        for page in pages:
+
+            url = 'http://www.imdb.com/search/title?release_date={}&page={}'.format(year,page) 
+            response = requests.get(url)
+
+            time.sleep(randint(8,15))
+
+            request += 1
+            elapsed_time = datetime.datetime.now() - start_time
+            print('Request : {}; Frequency: requests/sec'.format(request))
+            clear_output(wait  = True)
+
+            # Throw a warning for non-200 status codes
+            if response.status_code != 200:
+                warn('Request: {}; Status code: {}'.format(request, response.status_code))
+
+            # Break the loop if the number of requests is greater than expected
+            if request > 1000:
+                warn('Number of requests was greater than expected.')  
+                break
+    
+            soup = bs.BeautifulSoup(response.text, 'lxml')
+
+            movie_containers = soup.find_all('div', class_ = 'lister-item mode-advanced')
+
+    
+    
+            for container in movie_containers:
+
+                meta_check = container.find('span', class_ = 'metascore')
+                
+                if meta_check is not None:
+                    
+                    title = container.h3.a.text
+                    titles.append(title)
+
+                    year = container.h3.find('span', class_ = 'lister-item-year text-muted unbold').text
+                    years.append(year)
+
+                    rating = float(container.strong.text)
+                    ratings.append(rating)
+
+                    mscore = int(container.find('span', class_ = 'metascore').text)
+                    metascores.append(mscore)
+
+                    vote = int(container.find('span', attrs = {'name' : 'nv'})['data-value'])
+                    votes.append(vote)
+
+                    certificate = container.find('span', class_ = 'certificate')
+                    if certificate is not None:
+                        certificates.append(certificate.text)
+                    else:
+                        certificates.append('NaN')
+                    
+
+    movie_df = pd.DataFrame({'movie' : titles,
+                            'year' : years,
+                            'rating': ratings,
+                            'metascore': metascores,
+                            'votes' : votes,
+                            'certificate' : certificates
+                                })
+    movie_df.to_csv('movie.csv')
+    
+    
+get_movie_with_year()
